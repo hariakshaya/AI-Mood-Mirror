@@ -2,80 +2,108 @@ import streamlit as st
 from transformers import pipeline
 import random
 
-# Load sentiment analysis model
-sentiment_pipeline = pipeline("sentiment-analysis")
-
-# Mood-based recommendations
-mood_data = {
-    "POSITIVE": {
-        "quote": [
-            "Keep shining, the world needs your light!",
-            "Your vibe attracts your tribe.",
-            "Celebrate your wins, no matter how small!"
-        ],
-        "journaling": [
-            "What made you smile today?",
-            "Describe a moment when you felt proud recently.",
-            "Write about someone who made your day better."
-        ],
-        "music": [
-            "[Happy – Pharrell Williams](https://www.youtube.com/watch?v=ZbZSe6N_BXs)",
-            "[Best Day of My Life – American Authors](https://www.youtube.com/watch?v=Y66j_BUCBMY)"
-        ],
-        "podcast": [
-            "[The Daily Boost](https://www.dailyboost.com/)",
-            "[Happier with Gretchen Rubin](https://gretchenrubin.com/podcasts/)"
-        ]
-    },
-    "NEGATIVE": {
-        "quote": [
-            "You’ve survived 100% of your worst days so far.",
-            "Tough times never last, but tough people do.",
-            "It's okay to rest. Healing is not a race."
-        ],
-        "journaling": [
-            "What’s one thing you want to let go of?",
-            "Write a letter to yourself full of encouragement.",
-            "What’s one act of self-care you can do today?"
-        ],
-        "music": [
-            "[Let It Go – James Bay](https://www.youtube.com/watch?v=GsPq9mzFNGY)",
-            "[Rise Up – Andra Day](https://www.youtube.com/watch?v=lwgr_IMeEgA)"
-        ],
-        "podcast": [
-            "[The Mindful Kind](https://www.rachelkable.com/podcast)",
-            "[Therapy Chat](https://www.therapychatpodcast.com/)"
-        ]
-    }
+# Mood-color mapping for background bloom
+mood_colors = {
+    "happy": "#FFFACD",     # LemonChiffon
+    "sad": "#87CEFA",       # LightSkyBlue
+    "angry": "#FF6F61",     # Coral Red
+    "neutral": "#D3D3D3",   # LightGray
+    "surprise": "#FFD700",  # Gold
+    "fear": "#8A2BE2",      # BlueViolet
+    "disgust": "#98FB98",   # PaleGreen
 }
 
-# Streamlit UI
-st.set_page_config(page_title="AI Mood Mirror", layout="centered")
-st.title("🪞 AI Mood Mirror")
-st.markdown("Enter how you feel, and I’ll reflect support, quotes, journaling prompts, and media recommendations 🌈")
+# Music & podcast suggestions per mood
+music_links = {
+    "happy": ["https://open.spotify.com/track/6fTt0CH2t0mdeB2gk1B9Sx"],  # Example links
+    "sad": ["https://open.spotify.com/track/1u8c2t2Cy7UBoG4ArRcF5g"],
+    "angry": ["https://open.spotify.com/track/1rqqCSm0Qe4I9rUvWncaom"],
+    "neutral": ["https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT"],
+    "surprise": ["https://open.spotify.com/track/3tCvdHVsEnrVKYkWcEkk2b"],
+    "fear": ["https://open.spotify.com/track/3kVQVX9c69f81a7dtYeE9U"],
+    "disgust": ["https://open.spotify.com/track/2p8IUWQDrpjuFltbdgLOag"],
+}
 
-user_input = st.text_area("How are you feeling today?")
+quotes = {
+    "happy": "Keep smiling, the world is brighter with you!",
+    "sad": "It’s okay to feel sad. You’re doing your best.",
+    "angry": "Take a deep breath — you’re stronger than you think.",
+    "neutral": "Even calm days hold beauty. 🌿",
+    "surprise": "Life’s full of surprises — embrace the magic!",
+    "fear": "Courage is not the absence of fear but moving forward despite it.",
+    "disgust": "Let go of what’s not meant for you. You deserve peace.",
+}
+
+journal_prompts = {
+    "happy": "What made you smile today?",
+    "sad": "What’s one small thing you can do to feel better?",
+    "angry": "Write about what's frustrating you without judgment.",
+    "neutral": "Describe your current state in three words.",
+    "surprise": "What unexpected thing happened recently?",
+    "fear": "What’s one fear you’d like to let go of?",
+    "disgust": "Write about something you're ready to release emotionally.",
+}
+
+# Load NLP sentiment analysis pipeline
+nlp = pipeline("sentiment-analysis")
+
+# Streamlit App Config
+st.set_page_config(page_title="AI Mood Mirror 🌈", layout="centered")
+
+st.title("🪞 AI Mood Mirror")
+st.markdown("Tell me how you're feeling today — I’m listening 💬")
+
+# User input
+user_input = st.text_area("Type your current feelings or emotions:")
 
 if user_input:
-    result = sentiment_pipeline(user_input)[0]
-    mood = result['label'].upper()
+    analysis = nlp(user_input)[0]
+    label = analysis['label'].lower()
 
-    st.subheader("🔍 Detected Mood:")
-    st.write(f"**{mood.capitalize()}**")
+    # Simplify labels for mapping
+    mood = "neutral"
+    if "pos" in label:
+        mood = "happy"
+    elif "neg" in label:
+        # Try inferring deeper emotion based on keywords
+        if any(word in user_input.lower() for word in ["cry", "alone", "lost"]):
+            mood = "sad"
+        elif any(word in user_input.lower() for word in ["angry", "mad", "rage"]):
+            mood = "angry"
+        elif any(word in user_input.lower() for word in ["scared", "afraid"]):
+            mood = "fear"
+        elif any(word in user_input.lower() for word in ["gross", "ew", "disgust"]):
+            mood = "disgust"
+        else:
+            mood = "sad"
+    elif "neu" in label:
+        mood = "neutral"
 
-    data = mood_data.get(mood, mood_data["POSITIVE"])
+    # 🌈 Color bloom background
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-color: {mood_colors[mood]};
+            background-image: radial-gradient(circle at top left, white, {mood_colors[mood]});
+            transition: background 0.5s ease-in-out;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-    st.subheader("🧘‍♀️ Journaling Prompt")
-    st.write(random.choice(data["journaling"]))
+    # ✨ Show mood results
+    st.success(f"**Detected Mood:** {mood.capitalize()}")
 
-    st.subheader("💬 Motivational Quote")
-    st.write(random.choice(data["quote"]))
+    st.subheader("💡 Motivational Quote")
+    st.info(quotes[mood])
 
-    st.subheader("🎵 Music Recommendation")
-    st.markdown(random.choice(data["music"]), unsafe_allow_html=True)
+    st.subheader("📝 Journal Prompt")
+    st.write(journal_prompts[mood])
 
-    st.subheader("🎧 Podcast Suggestion")
-    st.markdown(random.choice(data["podcast"]), unsafe_allow_html=True)
+    st.subheader("🎧 Music / Podcast Recommendation")
+    for link in music_links[mood]:
+        st.markdown(f"- [Listen here]({link})")
 
-    st.markdown("---")
-    st.success("Take a deep breath. You're doing great 🌟")
+    st.balloons()
