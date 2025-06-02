@@ -81,17 +81,29 @@ if user_input:
 
     # 🌈 Color bloom background
     st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background-color: {mood_colors[mood]};
-            background-image: radial-gradient(circle at top left, white, {mood_colors[mood]});
-            transition: background 0.5s ease-in-out;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    f"""
+    <style>
+    .stApp {{
+        background-color: {mood_colors[mood]};
+        background-image: radial-gradient(circle at top left, white, {mood_colors[mood]});
+        color: #1a1a1a;  /* Darker text */
+    }}
+    h1, h2, h3, h4, h5, h6, p {{
+        color: #1a1a1a !important;  /* Override light color */
+        text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1);
+    }}
+    .stTextInput > div > div > input {{
+        background-color: #ffffff;
+        color: #000000;
+    }}
+    .stTextArea textarea {{
+        background-color: #ffffff;
+        color: #000000;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
     # ✨ Show mood results
     st.success(f"**Detected Mood:** {mood.capitalize()}")
